@@ -86,8 +86,8 @@ if __name__ == "__main__":
         await application.initialize()
         await application.start()
         await application.bot.set_webhook(url=f"https://goalpilot.onrender.com/{TELEGRAM_TOKEN}")
-        print("Webhook set.")
+        print("✅ Webhook set and bot is running.")
 
     loop = asyncio.get_event_loop()
-    loop.create_task(run())
+    loop.run_until_complete(run())
     app.run(host="0.0.0.0", port=10000)
