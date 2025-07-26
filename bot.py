@@ -8,8 +8,8 @@ from telegram.ext import (
 )
 
 # --- Set your tokens securely ---
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8263999156:AAGKHwcwFxsRZ_ejOdmBvF1s8yQH4MwqSic")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyATmp-9xSmrbn02NeF__aL96JwsrG5diYI")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- Gemini Prompt Builder ---
 def build_prompt(goal, days):
