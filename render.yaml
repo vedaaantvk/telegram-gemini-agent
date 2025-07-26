@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: telegram-gemini-agent
+    runtime: python
+    buildCommand: ""
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_TOKEN
+        value: 8263999156:AAGKHwcwFxsRZ_ejOdmBvF1s8yQH4MwqSic
+    pythonVersion: 3.10.13
