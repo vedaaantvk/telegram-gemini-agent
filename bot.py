@@ -7,12 +7,9 @@ from telegram.ext import (
     CommandHandler, MessageHandler, filters
 )
 
-# 🔐 Replace with your actual keys
-TELEGRAM_TOKEN = "8263999156:AAGKHwcwFxsRZ_ejOdmBvF1s8yQH4MwqSic"
-GEMINI_API_KEY = "AIzaSyATmp-9xSmrbn02NeF__aL96JwsrG5diYI"
-
-app = Flask(__name__)
-application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+# --- Set your tokens securely ---
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8263999156:AAGKHwcwFxsRZ_ejOdmBvF1s8yQH4MwqSic")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyATmp-9xSmrbn02NeF__aL96JwsrG5diYI")
 
 # --- Gemini Prompt Builder ---
 def build_prompt(goal, days):
@@ -35,20 +32,23 @@ Instructions:
         }]
     }
 
-# --- Gemini API Request ---
 def get_plan_from_gemini(goal, days):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
     payload = build_prompt(goal, days)
-    response = requests.post(url, json=payload)
-    data = response.json()
     try:
+        res = requests.post(url, json=payload)
+        data = res.json()
         return data['candidates'][0]['content']['parts'][0]['text']
     except:
         return "⚠️ Error: Couldn't get a valid response from Gemini."
 
-# --- Telegram Handlers ---
+# --- Flask + Telegram App ---
+app = Flask(__name__)
+application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+
+# Telegram handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Hi! Send me your goal like this:\n\nGoal: Learn Python\nDays: 14")
+    await update.message.reply_text("👋 Send me your goal like this:\n\nGoal: Learn Python\nDays: 14")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -60,34 +60,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             plan = get_plan_from_gemini(goal, days)
             await update.message.reply_text(plan[:4096])
         except Exception as e:
-            await update.message.reply_text("❌ Please format your message like:\nGoal: ...\nDays: ...")
+            await update.message.reply_text("❌ Please format like:\nGoal: ...\nDays: ...")
     else:
-        await update.message.reply_text("❌ Please format your message like:\nGoal: ...\nDays: ...")
+        await update.message.reply_text("❌ Please format like:\nGoal: ...\nDays: ...")
 
-# --- Add Handlers ---
+# Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 @app.route("/")
-def index():
-    return "Bot is running."
+def root():
+    return "Bot is live."
 
 @app.route(f"/{TELEGRAM_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.update_queue.put_nowait(update)
-    return 'ok'
+    return "ok"
 
-# --- Run Flask App ---
+# Startup
 if __name__ == "__main__":
     import asyncio
 
-    async def run_bot():
+    async def run():
         await application.initialize()
         await application.start()
-        print("Bot polling initialized (webhook will be used via Flask).")
-        await application.updater.start_polling()  # Optional fallback
+        await application.bot.set_webhook(url=f"https://goalpilot.onrender.com/{TELEGRAM_TOKEN}")
+        print("Webhook set.")
 
     loop = asyncio.get_event_loop()
-    loop.create_task(run_bot())
-    app.run(port=8443)
+    loop.create_task(run())
+    app.run(host="0.0.0.0", port=10000)
